@@ -1,0 +1,121 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global Safety Net (Default Deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 2. Hardened Primitives
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // 3. Entity Validation Blueprints
+    function isValidCadProject(data) {
+      return data.userId is string && data.userId == request.auth.uid && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+             data.name is string && data.name.size() >= 1 && data.name.size() <= 120 &&
+             data.templateType is string && data.templateType.size() >= 1 && data.templateType.size() <= 64 &&
+             data.description is string && data.description.size() <= 1000 &&
+             data.componentsJson is string && data.componentsJson.size() >= 2 && data.componentsJson.size() <= 250000 &&
+             (data.explodeFactor is int || data.explodeFactor is float) && data.explodeFactor >= 0 && data.explodeFactor <= 1 &&
+             data.multiObject3mf is bool &&
+             data.partCount is int && data.partCount >= 0 && data.partCount <= 500 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidPrinterProfile(data) {
+      return data.userId is string && data.userId == request.auth.uid && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+             data.name is string && data.name.size() >= 1 && data.name.size() <= 100 &&
+             data.protocol is string && data.protocol in ['OCTOPRINT', 'MOONRAKER', 'PRUSALINK', 'CLOUD_SLICER'] &&
+             data.endpointUrl is string && data.endpointUrl.size() >= 4 && data.endpointUrl.size() <= 500 &&
+             data.apiKey is string && data.apiKey.size() <= 256 &&
+             data.bedWidthMm is int && data.bedWidthMm >= 50 && data.bedWidthMm <= 1000 &&
+             data.bedDepthMm is int && data.bedDepthMm >= 50 && data.bedDepthMm <= 1000 &&
+             (data.nozzleMm is int || data.nozzleMm is float) && data.nozzleMm >= 0.1 && data.nozzleMm <= 2.0 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    // 4. Collection Rules: /cad_projects/{projectId}
+    match /cad_projects/{projectId} {
+      allow get: if isSignedIn() && isValidId(projectId) && existing().userId == request.auth.uid;
+      allow list: if isSignedIn() && existing().userId == request.auth.uid;
+
+      allow create: if isSignedIn() &&
+                       isValidId(projectId) &&
+                       incoming().keys().hasAll([
+                         'userId', 'name', 'templateType', 'description',
+                         'componentsJson', 'explodeFactor', 'multiObject3mf',
+                         'partCount', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'name', 'templateType', 'description',
+                         'componentsJson', 'explodeFactor', 'multiObject3mf',
+                         'partCount', 'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidCadProject(incoming());
+
+      allow update: if isSignedIn() &&
+                       isValidId(projectId) &&
+                       isValidCadProject(incoming()) &&
+                       existing().userId == request.auth.uid &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'name', 'templateType', 'description',
+                         'componentsJson', 'explodeFactor', 'multiObject3mf',
+                         'partCount', 'updatedAt'
+                       ]);
+
+      allow delete: if isSignedIn() && isValidId(projectId) && existing().userId == request.auth.uid;
+    }
+
+    // 5. Collection Rules: /printer_profiles/{printerId}
+    match /printer_profiles/{printerId} {
+      allow get: if isSignedIn() && isValidId(printerId) && existing().userId == request.auth.uid;
+      allow list: if isSignedIn() && existing().userId == request.auth.uid;
+
+      allow create: if isSignedIn() &&
+                       isValidId(printerId) &&
+                       incoming().keys().hasAll([
+                         'userId', 'name', 'protocol', 'endpointUrl',
+                         'apiKey', 'bedWidthMm', 'bedDepthMm', 'nozzleMm',
+                         'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'name', 'protocol', 'endpointUrl',
+                         'apiKey', 'bedWidthMm', 'bedDepthMm', 'nozzleMm',
+                         'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidPrinterProfile(incoming());
+
+      allow update: if isSignedIn() &&
+                       isValidId(printerId) &&
+                       isValidPrinterProfile(incoming()) &&
+                       existing().userId == request.auth.uid &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'name', 'protocol', 'endpointUrl',
+                         'apiKey', 'bedWidthMm', 'bedDepthMm', 'nozzleMm',
+                         'updatedAt'
+                       ]);
+
+      allow delete: if isSignedIn() && isValidId(printerId) && existing().userId == request.auth.uid;
+    }
+  }
+}

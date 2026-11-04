@@ -1,0 +1,140 @@
+{
+  "entities": {
+    "CadProject": {
+      "title": "CadProject",
+      "description": "Represents a 3D parametric CAD project or assembly stored in Firebase Cloud Storage (Firestore).",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The UID of the authenticated Google user who owns this CAD project."
+        },
+        "name": {
+          "type": "string",
+          "description": "Project title (1 to 120 characters)."
+        },
+        "templateType": {
+          "type": "string",
+          "description": "Template identifier or CUSTOM_SCRATCH."
+        },
+        "description": {
+          "type": "string",
+          "description": "Project summary and parametric specifications."
+        },
+        "componentsJson": {
+          "type": "string",
+          "description": "Serialized list of 3D CAD parametric components, shapes, booleans, fillets, holes, threads, and transforms."
+        },
+        "explodeFactor": {
+          "type": "number",
+          "description": "Saved explosion distance factor (0.0 to 1.0) for multi-part assembly view."
+        },
+        "multiObject3mf": {
+          "type": "boolean",
+          "description": "Whether 3MF exports keep each component as a separate mesh object for multi-color slicers."
+        },
+        "partCount": {
+          "type": "integer",
+          "description": "Total number of 3D components in the assembly."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation timestamp populated via FieldValue.serverTimestamp()."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last update timestamp populated via FieldValue.serverTimestamp()."
+        }
+      },
+      "required": [
+        "userId",
+        "name",
+        "templateType",
+        "description",
+        "componentsJson",
+        "explodeFactor",
+        "multiObject3mf",
+        "partCount",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "PrinterProfile": {
+      "title": "PrinterProfile",
+      "description": "Represents a local or remote 3D printer endpoint (OctoPrint, Moonraker/Klipper, PrusaLink, Bambu Connect) owned by the user.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The UID of the authenticated Google user who owns this printer profile."
+        },
+        "name": {
+          "type": "string",
+          "description": "Friendly name of the 3D printer."
+        },
+        "protocol": {
+          "type": "string",
+          "description": "Protocol type: OCTOPRINT, MOONRAKER, PRUSALINK, or CLOUD_SLICER."
+        },
+        "endpointUrl": {
+          "type": "string",
+          "description": "Base HTTP/HTTPS URL or IP address of the printer or remote print server."
+        },
+        "apiKey": {
+          "type": "string",
+          "description": "Optional API key or token for printer authentication."
+        },
+        "bedWidthMm": {
+          "type": "integer",
+          "description": "Build plate width in mm."
+        },
+        "bedDepthMm": {
+          "type": "integer",
+          "description": "Build plate depth in mm."
+        },
+        "nozzleMm": {
+          "type": "number",
+          "description": "Nozzle diameter in mm."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation timestamp via FieldValue.serverTimestamp()."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last update timestamp via FieldValue.serverTimestamp()."
+        }
+      },
+      "required": [
+        "userId",
+        "name",
+        "protocol",
+        "endpointUrl",
+        "apiKey",
+        "bedWidthMm",
+        "bedDepthMm",
+        "nozzleMm",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/cad_projects/{projectId}": {
+      "schema": {
+        "$ref": "#/entities/CadProject"
+      },
+      "description": "User-owned 3D parametric CAD projects and assemblies."
+    },
+    "/printer_profiles/{printerId}": {
+      "schema": {
+        "$ref": "#/entities/PrinterProfile"
+      },
+      "description": "User-owned local and remote 3D printer profiles."
+    }
+  }
+}

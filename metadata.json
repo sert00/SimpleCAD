@@ -1,0 +1,6 @@
+{
+  "name": "SimpleCAD",
+  "description": "3D parametric CAD modeler with STL/STEP/3MF export, assembly explosion, accelerometer view control, and cloud sync.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
